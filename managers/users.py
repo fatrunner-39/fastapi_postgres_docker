@@ -5,7 +5,7 @@ from sqlalchemy import select
 from helpers import get_password_hash, verify_password
 from fastapi import HTTPException
 from typing import Optional
-from helpers import signJWT
+from helpers import signJWT, check_email
 
 
 class UserManager(BaseManager):
@@ -15,7 +15,7 @@ class UserManager(BaseManager):
                 user = await session.execute(select(User).where(User.username == user.username))
                 return user.scalar()
 
-    async def create(self, user, as_dict: Optional = False):
+    async def create(self, user, as_dict: Optional[bool] = False):
         async with async_session() as session:
             async with session.begin():
                 exist_user = await self.get_user_by_username(user)
@@ -23,6 +23,11 @@ class UserManager(BaseManager):
                     raise HTTPException(
                         status_code=400,
                         detail={"error": f'User with username = {user.username} already exists!'})
+                verify_email = await check_email(user.username)
+                if not verify_email:
+                    raise HTTPException(
+                        status_code=400,
+                        detail={"error": f'Invalid email'})
                 # hash password
                 user.password = get_password_hash(user.password)
                 new_user = await super().create(user, as_dict)

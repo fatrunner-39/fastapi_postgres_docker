@@ -1,5 +1,5 @@
 from db import async_session, Base
-from typing import TypeVar, Optional
+from typing import TypeVar, Optional, Union
 from sqlalchemy import select, update, delete
 from fastapi import HTTPException
 
