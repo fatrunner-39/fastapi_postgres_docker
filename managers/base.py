@@ -1,4 +1,6 @@
-from db import async_session, Base
+import time
+
+from db import async_session, Base, get_db_session
 from typing import TypeVar, Optional, Union
 from sqlalchemy import select, update, delete
 from fastapi import HTTPException
@@ -25,14 +27,21 @@ class BaseManager:
                 return instance.as_dict()
 
     async def get_all(self, as_dict: Optional[bool] = False):
-        async with async_session() as session:
-            async with session.begin():
-                instances = await session.execute(select(self.model))
-                instances = instances.scalars().all()
-                if not as_dict:
-                    return instances
-                else:
-                    return [instance.as_dict() for instance in instances]
+        with get_db_session() as db:
+            instances = db.query(self.model).all()
+            time.sleep(15)
+            if not as_dict:
+                return instances
+            else:
+                return [instance.as_dict() for instance in instances]
+        # async with async_session() as session:
+        #     async with session.begin():
+        #         instances = await session.execute(select(self.model))
+        #         instances = instances.scalars().all()
+        #         if not as_dict:
+        #             return instances
+        #         else:
+        #             return [instance.as_dict() for instance in instances]
 
     async def update(self, schema, id, as_dict: Optional[bool] = False, *args, **kwargs):
         await self.get_by_id(id)

@@ -1,3 +1,5 @@
+from datetime import datetime
+
 import schema
 from fastapi import APIRouter, Depends
 
@@ -20,6 +22,9 @@ async def login(user: schema.User):
 
 @router.get("/", dependencies=[Depends(JWTBearer())])
 async def get_all_users(Authorize:AuthJWT = Depends()):
-    print(get_dict_from_token(Authorize))
+    start = datetime.now()
+    get_dict_from_token(Authorize)
     users = await user_manager.get_all(as_dict=True)
+    print('#########', datetime.now())
+    print('#########', datetime.now() - start)
     return users
