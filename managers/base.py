@@ -28,8 +28,9 @@ class BaseManager:
 
     async def get_all(self, as_dict: Optional[bool] = False):
         with get_db_session() as db:
+            print(get_db_session())
             instances = db.query(self.model).all()
-            time.sleep(15)
+            time.sleep(1)
             if not as_dict:
                 return instances
             else:
