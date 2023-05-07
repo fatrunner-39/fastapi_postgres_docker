@@ -1,30 +1,33 @@
-from datetime import datetime
-
-import schema
 from fastapi import APIRouter, Depends
 
-from helpers import JWTBearer, get_dict_from_token, AuthJWT
+from schema import User, NewUser
+from helpers import AuthJWT, JWTBearer, get_dict_from_token
 from managers import user_manager
+from db import get_db_session
 
 router = APIRouter()
 
 
 @router.post("/sign_up")
-async def create_account(user: schema.User):
-    new_user = await user_manager.create(user, as_dict=True)
-    return new_user
+def create_account(user: User):
+    with get_db_session() as session:
+        new_user = user_manager.create(user, session)
+        session.commit()
+        return NewUser.from_orm(new_user)
 
 
 @router.post("/login/")
-async def login(user: schema.User):
-    return await user_manager.check_user(user)
+def login(user: User):
+    with get_db_session() as session:
+        result = user_manager.check_user(user, session)
+        return result
 
 
 @router.get("/", dependencies=[Depends(JWTBearer())])
-async def get_all_users(Authorize:AuthJWT = Depends()):
-    start = datetime.now()
-    get_dict_from_token(Authorize)
-    users = await user_manager.get_all(as_dict=True)
-    print('#########', datetime.now())
-    print('#########', datetime.now() - start)
-    return users
+def get_all_users(Authorize:AuthJWT = Depends()):
+    print(get_dict_from_token(Authorize))
+    with get_db_session() as session:
+        users = user_manager.get_all(session)
+        # TODO: сделать уничерсальный метод для отображения get_all
+        users = list(map(NewUser.from_orm, users))
+        return users

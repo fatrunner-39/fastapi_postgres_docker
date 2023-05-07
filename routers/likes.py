@@ -1,10 +1,8 @@
-from fastapi import Request
+from fastapi import APIRouter, Depends, Request
 
-from schema import Like
-from fastapi import APIRouter, Depends
-
+from helpers import AuthJWT, JWTBearer, get_dict_from_token
 from managers import like_manager
-from helpers import JWTBearer, get_dict_from_token, AuthJWT
+from schema import Like
 
 router = APIRouter()
 

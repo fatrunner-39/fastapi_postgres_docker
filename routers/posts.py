@@ -1,8 +1,8 @@
-from schema import Post, PostUpdate
 from fastapi import APIRouter, Depends
 
-from helpers import JWTBearer, get_dict_from_token, AuthJWT
+from helpers import AuthJWT, JWTBearer, get_dict_from_token
 from managers import post_manager
+from schema import Post, PostUpdate
 
 router = APIRouter()
 

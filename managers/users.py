@@ -1,54 +1,50 @@
-from . import BaseManager
-from models import User
-from db import async_session
-from sqlalchemy import select
-from helpers import get_password_hash, verify_password
-from fastapi import HTTPException
 from typing import Optional
-from helpers import signJWT, check_email
+from sqlalchemy.orm.session import Session
+
+from fastapi import HTTPException
+from sqlalchemy import select
+
+from db import async_session
+from helpers import check_email, get_password_hash, signJWT, verify_password
+from models import User
+
+from . import BaseManager
 
 
 class UserManager(BaseManager):
-    async def get_user_by_username(self, user):
-        async with async_session() as session:
-            async with session.begin():
-                user = await session.execute(select(User).where(User.username == user.username))
-                return user.scalar()
+    def get_user_by_username(self, user: User, session: Session) -> User:
+        user = session.query(User).filter_by(username=user.username).scalar()
+        return user
 
-    async def create(self, user, as_dict: Optional[bool] = False):
-        async with async_session() as session:
-            async with session.begin():
-                exist_user = await self.get_user_by_username(user)
-                if exist_user:
-                    raise HTTPException(
-                        status_code=400,
-                        detail={"error": f'User with username = {user.username} already exists!'})
-                verify_email = await check_email(user.username)
-                if not verify_email:
-                    raise HTTPException(
-                        status_code=400,
-                        detail={"error": f'Invalid email'})
-                # hash password
-                user.password = get_password_hash(user.password)
-                new_user = await super().create(user, as_dict)
+    def create(self, user: User, session: Session) -> User:
+        exist_user = self.get_user_by_username(user, session)
+        if exist_user:
+            raise HTTPException(
+                status_code=400,
+                detail={"error": f'User with username = {user.username} already exists!'})
+        # verify_email = check_email(user.username)
+        # if not verify_email:
+        #     raise HTTPException(
+        #         status_code=400,
+        #         detail={"error": f'Invalid email'})
+        # hash password
+        user.password = get_password_hash(user.password)
+        new_user: User = super().create(user, session)
+        return new_user
 
-                return new_user
+    def check_user(self, user: User, session: Session):
+        current_user = self.get_user_by_username(user, session)
+        if hasattr(current_user, "password"):
+            current_password = verify_password(getattr(user, "password"), current_user.password)
+        else:
+            current_password = False
 
-    async def check_user(self, user):
-        async with async_session() as session:
-            async with session.begin():
-                current_user = await self.get_user_by_username(user)
-                if hasattr(current_user, "password"):
-                    current_password = verify_password(getattr(user, "password"), current_user.password)
-                else:
-                    current_password = False
-
-                if not (current_user and current_password):
-                    raise HTTPException(
-                        status_code=403,
-                        detail={"error": f'Invalid user credentials'})
-                else:
-                    return signJWT(current_user.id)
+        if not (current_user and current_password):
+            raise HTTPException(
+                status_code=403,
+                detail={"error": f'Invalid user credentials'})
+        else:
+            return signJWT(current_user.id)
 
 
 user_manager = UserManager(User)

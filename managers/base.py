@@ -1,9 +1,10 @@
 import time
+from typing import Optional, TypeVar, Union, List
 
-from db import async_session, Base, get_db_session
-from typing import TypeVar, Optional, Union
-from sqlalchemy import select, update, delete
 from fastapi import HTTPException
+from sqlalchemy import delete, select, update
+
+from db import Base, async_session, get_db_session
 
 ModelType = TypeVar("ModelType", bound=Base)
 
@@ -13,36 +14,17 @@ class BaseManager:
     def __init__(self, model: ModelType):
         self.model = model
 
-    async def create(self, schema, as_dict: Optional[bool] = False, *args, **kwargs):
-        async with async_session() as session:
-            async with session.begin():
-                if type(schema) == dict:
-                    instance = self.model(**schema)
-                else:
-                    instance = self.model(**schema.dict())
-                session.add(instance)
-                await session.commit()
-                if not as_dict:
-                    return instance
-                return instance.as_dict()
+    def create(self, schema, session, *args, **kwargs) -> ModelType:
+        if type(schema) == dict:
+            instance: ModelType = self.model(**schema)
+        else:
+            instance = self.model(**schema.dict())
+        session.add(instance)
+        return instance
 
-    async def get_all(self, as_dict: Optional[bool] = False):
-        with get_db_session() as db:
-            print(get_db_session())
-            instances = db.query(self.model).all()
-            time.sleep(1)
-            if not as_dict:
-                return instances
-            else:
-                return [instance.as_dict() for instance in instances]
-        # async with async_session() as session:
-        #     async with session.begin():
-        #         instances = await session.execute(select(self.model))
-        #         instances = instances.scalars().all()
-        #         if not as_dict:
-        #             return instances
-        #         else:
-        #             return [instance.as_dict() for instance in instances]
+    def get_all(self, session) -> List[ModelType]:
+        instances: List[ModelType] = session.query(self.model).all()
+        return instances
 
     async def update(self, schema, id, as_dict: Optional[bool] = False, *args, **kwargs):
         await self.get_by_id(id)

@@ -1,5 +1,6 @@
-from db import Base
 from sqlalchemy import Column, Integer, String
+
+from db import Base
 
 
 class User(Base):
@@ -8,9 +9,3 @@ class User(Base):
     id = Column(Integer, primary_key=True)
     username = Column(String)
     password = Column(String)
-
-    def as_dict(self):
-        return {
-            'id': self.id,
-            'username': self.username
-        }

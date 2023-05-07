@@ -1,11 +1,13 @@
 from typing import Optional
+
 from fastapi import HTTPException
+from sqlalchemy import and_, select
 
 from db import async_session
-from . import BaseManager
 from models import Like
-from sqlalchemy import select, and_
-from . import post_manager
+
+from . import BaseManager
+from .posts import post_manager
 
 
 class LikeManager(BaseManager):

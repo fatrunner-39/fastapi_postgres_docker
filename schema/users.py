@@ -1,7 +1,8 @@
-from pydantic import BaseModel, EmailStr
+from .base import BaseSchema
+from pydantic import EmailStr
 
 
-class User(BaseModel):
+class User(BaseSchema):
     username: EmailStr
     password: str
 
@@ -12,3 +13,8 @@ class User(BaseModel):
                 "password": "password"
             }
         }
+
+
+class NewUser(BaseSchema):
+    id: int
+    username: str

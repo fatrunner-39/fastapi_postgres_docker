@@ -1,10 +1,13 @@
-from db import async_session
-from . import BaseManager
-from models import Post, Like
-from typing import Optional
 from datetime import datetime
+from typing import Optional
+
 from fastapi import HTTPException
 from sqlalchemy import select
+
+from db import async_session
+from models import Like, Post
+
+from . import BaseManager
 
 
 class PostManager(BaseManager):

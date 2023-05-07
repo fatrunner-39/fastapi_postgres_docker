@@ -1,5 +1,6 @@
+from sqlalchemy import Boolean, Column, ForeignKey, Integer
+
 from db import Base
-from sqlalchemy import Column, Integer, ForeignKey, Boolean
 
 
 class Like(Base):
