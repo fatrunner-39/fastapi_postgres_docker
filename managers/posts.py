@@ -1,62 +1,36 @@
-from datetime import datetime
-from typing import Optional
-
 from fastapi import HTTPException
-from sqlalchemy import select
+from sqlalchemy.orm.session import Session
 
-from db import async_session
-from models import Like, Post
+from models import Post
 
 from . import BaseManager
 
 
 class PostManager(BaseManager):
-    async def create(self,
-                     post,
-                     as_dict: Optional[bool] = False,
-                     *args,
-                     **kwargs):
-        creator_id = kwargs.get('creator_id')
-        post = post.dict()
-        post.update(
-            {
-                'creator_id': creator_id,
-                'published': datetime.now()
-            }
-        )
-        new_post = await super().create(post)
+    def create(self, post: Post, session: Session, *args, **kwargs) -> Post:
+        creator_id = kwargs.get("creator_id")
+        post.creator_id = creator_id
+        new_post: Post = super().create(post, session, *args, **kwargs)
+        return new_post
 
-        return new_post.as_dict_extra()
-
-    async def update(self,
-                     post,
-                     id,
-                     as_dict: Optional[bool] = False,
-                     *args,
-                     **kwargs):
-        current_user = kwargs.get('current_user')
-        post_for_update = await self.get_by_id(id)
+    def update(self, post, id, session: Session, *args, **kwargs) -> Post:
+        current_user = kwargs.get("current_user")
+        post_for_update = self.get_by_id(id, session)
         if current_user != post_for_update.creator_id:
             raise HTTPException(
-                        status_code=403,
-                        detail={"error": f'You can edit only your posts'})
-        post = post.dict()
-
-        if not post.get('title'):
-            post['title'] = post_for_update.title
-        if not post.get('text'):
-            post['text'] = post_for_update.text
-        updated_post = await super().update(post, id, as_dict=True)
+                status_code=403, detail={"error": f"You can edit only your posts"}
+            )
+        updated_post = super().update(post, id, session)
         return updated_post
 
-    async def delete(self, id, **kwargs):
-        current_user = kwargs.get('current_user')
-        post_for_delete = await self.get_by_id(id)
+    def delete(self, id, session: Session, **kwargs):
+        current_user = kwargs.get("current_user")
+        post_for_delete = self.get_by_id(id, session)
         if current_user != post_for_delete.creator_id:
             raise HTTPException(
-                status_code=403,
-                detail={"error": f'You can delete only your posts'})
-        await super().delete(id)
+                status_code=403, detail={"error": f"You can delete only your posts"}
+            )
+        super().delete(id, session)
 
 
 post_manager = PostManager(Post)

@@ -1,9 +1,9 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query
 
-from schema import User, NewUser
-from helpers import AuthJWT, JWTBearer, get_dict_from_token
-from managers import user_manager
 from db import get_db_session
+from helpers import JWTBearer
+from managers import user_manager
+from schema import NewUser, User, View
 
 router = APIRouter()
 
@@ -13,21 +13,21 @@ def create_account(user: User):
     with get_db_session() as session:
         new_user = user_manager.create(user, session)
         session.commit()
-        return NewUser.from_orm(new_user)
+    return NewUser.from_orm(new_user)
 
 
 @router.post("/login/")
 def login(user: User):
     with get_db_session() as session:
         result = user_manager.check_user(user, session)
-        return result
+    return result
 
 
 @router.get("/", dependencies=[Depends(JWTBearer())])
-def get_all_users(Authorize:AuthJWT = Depends()):
-    print(get_dict_from_token(Authorize))
+def get_all_users(
+    page: int = Query(1, description="Page number", ge=1),
+    page_size: int = Query(50, description="Items per page", ge=1),
+):
     with get_db_session() as session:
-        users = user_manager.get_all(session)
-        # TODO: сделать уничерсальный метод для отображения get_all
-        users = list(map(NewUser.from_orm, users))
-        return users
+        users, meta = user_manager.get_all(session, page=page, page_size=page_size)
+    return View.from_list(NewUser, users, meta)

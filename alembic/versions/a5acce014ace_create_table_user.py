@@ -10,20 +10,20 @@ import sqlalchemy as sa
 from alembic import op
 
 # revision identifiers, used by Alembic.
-revision = 'a5acce014ace'
-down_revision = ''
+revision = "a5acce014ace"
+down_revision = ""
 branch_labels = None
 depends_on = None
 
 
 def upgrade() -> None:
     op.create_table(
-        'users',
-        sa.Column('id', sa.Integer, primary_key=True),
-        sa.Column('username', sa.String(50), nullable=False),
-        sa.Column('password', sa.String(256), nullable=False),
+        "users",
+        sa.Column("id", sa.Integer, primary_key=True),
+        sa.Column("username", sa.String(50), nullable=False),
+        sa.Column("password", sa.String(256), nullable=False),
     )
 
 
 def downgrade() -> None:
-    op.drop_table('users')
+    op.drop_table("users")

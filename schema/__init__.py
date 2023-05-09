@@ -1,4 +1,4 @@
-from .likes import Like
-from .posts import Post, PostUpdate
-from .users import User, NewUser
-from .base import BaseSchema
+from .base import BaseSchema, View
+from .likes import Like, NewLike
+from .posts import NewPost, Post, PostUpdate
+from .users import NewUser, User

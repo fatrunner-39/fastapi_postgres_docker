@@ -1,9 +1,10 @@
-from typing import Optional
+from typing import Union
 
-from fastapi import HTTPException
-from sqlalchemy import and_, select
+from fastapi import HTTPException, Request
+from sqlalchemy import and_
+from sqlalchemy.orm.session import Session
 
-from db import async_session
+import schema
 from models import Like
 
 from . import BaseManager
@@ -11,48 +12,46 @@ from .posts import post_manager
 
 
 class LikeManager(BaseManager):
-    async def get_like_exist(self, user_id, post_id):
-        async with async_session() as session:
-            async with session.begin():
-                instance = await session.execute(select(self.model).where(and_(self.model.user_id == user_id,
-                                                                               self.model.post_id == post_id)))
-                return instance.scalar()
+    def get_like_exist(
+        self, user_id: int, post_id: int, session: Session
+    ) -> Union[Like, None]:
+        instance: Like | None = (
+            session.query(self.model)
+            .where(and_(self.model.user_id == user_id, self.model.post_id == post_id))
+            .scalar()
+        )
+        return instance
 
     def get_choice(self, request):
         choice = str(request.url)
-        choice = choice.split('/')
-        if choice[-2] == 'like':
-            return True
-        else:
+        choice = choice.split("/")
+        if choice[-2] != "like":
             return False
+        return True
 
-    async def update_or_create(self, request, like, as_dict: Optional[bool] = False, **kwargs):
-        current_user = kwargs.get('current_user')
-        like_exist = await self.get_like_exist(current_user, like.post_id)
+    def update_or_create(
+        self, request: Request, like: schema.Like, session: Session, **kwargs
+    ) -> Like:
+        current_user = kwargs.get("current_user")
+        like_exist = self.get_like_exist(current_user, like.post_id, session)
 
         choice = self.get_choice(request)
 
         if not like_exist:
-            data = {
-                'user_id': current_user,
-                'post_id': like.post_id,
-                'is_like': choice
-            }
-            return await super().create(data, as_dict=True)
+            data = {"user_id": current_user, "post_id": like.post_id, "is_like": choice}
+            data = schema.Like(**data)
+            return super().create(data, session)
         else:
-
-            post = await post_manager.get_by_id(like_exist.post_id)
+            post = post_manager.get_by_id(like_exist.post_id, session)
 
             # prevent to like self posts
             if current_user == post.creator_id:
-                raise HTTPException(
-                    status_code=403,
-                    detail={"failed": 'Forbidden'})
+                raise HTTPException(status_code=403, detail={"failed": "Forbidden"})
 
             if like_exist.is_like == choice:
-                await super().delete(like_exist.id)
+                super().delete(like_exist.id, session)
             else:
-                return await super().update({'is_like': choice}, like_exist.id, as_dict)
+                return super().update({"is_like": choice}, like_exist.id, session)
 
 
 like_manager = LikeManager(Like)

@@ -1,6 +1,5 @@
 import os
 import time
-from ast import literal_eval
 from typing import Dict
 
 import jwt
@@ -16,16 +15,11 @@ JWT_ALGORITHM = os.environ.get("algorithm")
 
 
 def token_response(token: str):
-    return {
-        "access_token": token
-    }
+    return {"access_token": token}
 
 
 def signJWT(user_id: str) -> Dict[str, str]:
-    payload = {
-        "user_id": user_id,
-        "expires": time.time() + 60*480
-    }
+    payload = {"user_id": user_id, "expires": time.time() + 60 * 480}
     token = jwt.encode(payload, JWT_SECRET, algorithm=JWT_ALGORITHM)
 
     return token_response(token)
@@ -44,12 +38,18 @@ class JWTBearer(HTTPBearer):
         super(JWTBearer, self).__init__(auto_error=auto_error)
 
     async def __call__(self, request: Request):
-        credentials: HTTPAuthorizationCredentials = await super(JWTBearer, self).__call__(request)
+        credentials: HTTPAuthorizationCredentials = await super(
+            JWTBearer, self
+        ).__call__(request)
         if credentials:
             if not credentials.scheme == "Bearer":
-                raise HTTPException(status_code=403, detail="Invalid authentication scheme.")
+                raise HTTPException(
+                    status_code=403, detail="Invalid authentication scheme."
+                )
             if not self.verify_jwt(credentials.credentials):
-                raise HTTPException(status_code=403, detail="Invalid token or expired token.")
+                raise HTTPException(
+                    status_code=403, detail="Invalid token or expired token."
+                )
             return credentials.credentials
         else:
             raise HTTPException(status_code=403, detail="Invalid authorization code.")
@@ -68,4 +68,4 @@ class JWTBearer(HTTPBearer):
 
 def get_dict_from_token(Authorize: AuthJWT):
     token_data = decodeJWT(Authorize._token)
-    return token_data['user_id']
+    return token_data["user_id"]

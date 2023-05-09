@@ -14,7 +14,9 @@ config = context.config
 
 section = config.config_ini_section
 config.set_section_option(section, "POSTGRES_USER", os.environ.get("POSTGRES_USER"))
-config.set_section_option(section, "POSTGRES_PASSWORD", os.environ.get("POSTGRES_PASSWORD"))
+config.set_section_option(
+    section, "POSTGRES_PASSWORD", os.environ.get("POSTGRES_PASSWORD")
+)
 config.set_section_option(section, "POSTGRES_SERVER", os.environ.get("POSTGRES_SERVER"))
 config.set_section_option(section, "POSTGRES_DB", os.environ.get("POSTGRES_DB"))
 
@@ -73,9 +75,7 @@ def run_migrations_online() -> None:
     )
 
     with connectable.connect() as connection:
-        context.configure(
-            connection=connection, target_metadata=target_metadata
-        )
+        context.configure(connection=connection, target_metadata=target_metadata)
 
         with context.begin_transaction():
             context.run_migrations()

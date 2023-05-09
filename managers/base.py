@@ -1,62 +1,67 @@
-import time
-from typing import Optional, TypeVar, Union, List
+import math
+from typing import List, TypeVar
 
-from fastapi import HTTPException
-from sqlalchemy import delete, select, update
+from fastapi import HTTPException, Query
+from sqlalchemy.orm.session import Session
 
-from db import Base, async_session, get_db_session
+from db import Base
 
 ModelType = TypeVar("ModelType", bound=Base)
 
 
 class BaseManager:
-
     def __init__(self, model: ModelType):
         self.model = model
 
-    def create(self, schema, session, *args, **kwargs) -> ModelType:
+    def create(self, schema, session: Session, *args, **kwargs) -> ModelType:
         if type(schema) == dict:
             instance: ModelType = self.model(**schema)
         else:
-            instance = self.model(**schema.dict())
+            instance: ModelType = self.model(**schema.dict())
         session.add(instance)
         return instance
 
-    def get_all(self, session) -> List[ModelType]:
-        instances: List[ModelType] = session.query(self.model).all()
-        return instances
+    def get_all(self, session: Session, *args, **kwargs) -> List[ModelType]:
+        page = kwargs.get("page", 1)
+        page_size = kwargs.get("page_size", 50)
+        instances: List[ModelType] = session.query(self.model).order_by(self.model.id)
+        instances, meta = self._paginate(instances, page, page_size)
 
-    async def update(self, schema, id, as_dict: Optional[bool] = False, *args, **kwargs):
-        await self.get_by_id(id)
-        async with async_session() as session:
-            async with session.begin():
-                if type(schema) == dict:
-                    await session.execute(update(self.model).where(self.model.id == id).values(**schema))
-                else:
-                    await session.execute(update(self.model).where(self.model.id == id).values(**schema.dict()))
-                await session.commit()
-                instance = await self.get_by_id(id)
-                if not as_dict:
-                    return instance
-                else:
-                    return instance.as_dict()
+        return instances.all(), meta
 
-    async def get_by_id(self, id, as_dict: Optional[bool] = False,):
-        async with async_session() as session:
-            async with session.begin():
-                instance = await session.execute(select(self.model).where(self.model.id == id))
-                instance = instance.scalar()
-                if not instance:
-                    raise HTTPException(
-                        status_code=404,
-                        detail={"error": f"Instance with id = {id} doesn't exist!"})
-                if as_dict:
-                    return instance.as_dict()
-                else:
-                    return instance
+    def get_by_id(self, id, session: Session):
+        instance: ModelType = session.query(self.model).filter_by(id=id).scalar()
+        if not instance:
+            raise HTTPException(
+                status_code=404,
+                detail={"error": f"Instance with id = {id} doesn't exist!"},
+            )
+        return instance
 
-    async def delete(self, id):
-        async with async_session() as session:
-            async with session.begin():
-                await session.execute(delete(self.model).where(self.model.id == id))
-                await session.commit()
+    def update(self, schema, id, session: Session, *args, **kwargs):
+        self.get_by_id(id, session)
+        if type(schema) == dict:
+            session.query(self.model).filter_by(id=id).update(
+                schema, synchronize_session=False
+            )
+        else:
+            session.query(self.model).filter_by(id=id).update(
+                schema.dict(), synchronize_session=False
+            )
+        instance = self.get_by_id(id, session)
+        return instance
+
+    def delete(self, id, session: Session) -> None:
+        session.query(self.model).filter_by(id=id).delete(synchronize_session=False)
+
+    def _paginate(self, objects: Query, page: int = 1, page_size: int = 50):
+        total_count = objects.count()
+        total_pages = math.ceil(total_count / page_size)
+        objects = objects.limit(page_size).offset((page - 1) * page_size)
+        meta = {
+            "page_number": page,
+            "page_size": page_size,
+            "total_pages": total_pages,
+            "total_count": total_count,
+        }
+        return objects, meta

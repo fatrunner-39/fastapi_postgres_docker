@@ -1,5 +1,6 @@
-from .base import BaseSchema
 from pydantic import EmailStr
+
+from .base import BaseSchema
 
 
 class User(BaseSchema):
@@ -8,10 +9,7 @@ class User(BaseSchema):
 
     class Config:
         schema_extra = {
-            "example": {
-                "username": "user@example.com",
-                "password": "password"
-            }
+            "example": {"username": "user@example.com", "password": "password"}
         }
 
 
