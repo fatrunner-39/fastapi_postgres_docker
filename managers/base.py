@@ -59,9 +59,7 @@ class BaseManager:
         total_pages = math.ceil(total_count / page_size)
         objects = objects.limit(page_size).offset((page - 1) * page_size)
         meta = {
-            "page_number": page,
-            "page_size": page_size,
-            "total_pages": total_pages,
+            "page": f"Page {page} from {total_pages}",
             "total_count": total_count,
         }
         return objects, meta
