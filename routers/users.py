@@ -30,4 +30,4 @@ def get_all_users(
 ):
     with get_db_session() as session:
         users, meta = user_manager.get_all(session, page=page, page_size=page_size)
-    return View.from_list(NewUser, users, meta)
+        return View.from_list(NewUser, users, meta)

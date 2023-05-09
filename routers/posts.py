@@ -1,3 +1,5 @@
+from typing import Optional
+
 from fastapi import APIRouter, Depends, Query
 
 from db import get_db_session
@@ -19,14 +21,18 @@ def create_post(post: Post, Authorize: AuthJWT = Depends()):
 
 @router.get("/", dependencies=[Depends(JWTBearer())])
 def get_all_posts(
+    filter: str = None,
     page: int = Query(1, description="Page number", ge=1),
     page_size: int = Query(50, description="Items per page", ge=1),
 ):
     with get_db_session() as session:
-        posts, meta = post_manager.get_all(session, page=page, page_size=page_size)
-        print(posts)
+        posts = post_manager.get_all(session)
+        if filter:
+            posts = post_manager.filter_by_text(posts, filter)
 
-    return View.from_list(NewPost, posts, meta)
+        posts, meta = post_manager.paginate(posts, page, page_size)
+
+        return View.from_list(NewPost, posts, meta)
 
 
 @router.get("/{id}", dependencies=[Depends(JWTBearer())])

@@ -21,13 +21,10 @@ class BaseManager:
         session.add(instance)
         return instance
 
-    def get_all(self, session: Session, *args, **kwargs) -> List[ModelType]:
-        page = kwargs.get("page", 1)
-        page_size = kwargs.get("page_size", 50)
+    def get_all(self, session: Session) -> List[ModelType]:
         instances: List[ModelType] = session.query(self.model).order_by(self.model.id)
-        instances, meta = self._paginate(instances, page, page_size)
 
-        return instances.all(), meta
+        return instances
 
     def get_by_id(self, id, session: Session):
         instance: ModelType = session.query(self.model).filter_by(id=id).scalar()
@@ -54,7 +51,7 @@ class BaseManager:
     def delete(self, id, session: Session) -> None:
         session.query(self.model).filter_by(id=id).delete(synchronize_session=False)
 
-    def _paginate(self, objects: Query, page: int = 1, page_size: int = 50):
+    def paginate(self, objects: Query, page: int = 1, page_size: int = 50):
         total_count = objects.count()
         total_pages = math.ceil(total_count / page_size)
         objects = objects.limit(page_size).offset((page - 1) * page_size)

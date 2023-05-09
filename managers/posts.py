@@ -1,4 +1,4 @@
-from fastapi import HTTPException
+from fastapi import HTTPException, Query
 from sqlalchemy.orm.session import Session
 
 from models import Post
@@ -31,6 +31,9 @@ class PostManager(BaseManager):
                 status_code=403, detail={"error": f"You can delete only your posts"}
             )
         super().delete(id, session)
+
+    def filter_by_text(self, instances: Query, text: str):
+        return instances.filter(Post.title.ilike(f"%{text}%"))
 
 
 post_manager = PostManager(Post)
