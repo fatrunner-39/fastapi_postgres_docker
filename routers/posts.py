@@ -30,9 +30,9 @@ def get_all_posts(
         if filter:
             posts = post_manager.filter_by_text(posts, filter)
 
-        posts, meta = post_manager.paginate(posts, page, page_size)
+        posts = post_manager.paginate(posts, page, page_size)
 
-        return View.from_list(NewPost, posts, meta)
+    return View.from_list(NewPost, posts)
 
 
 @router.get("/{id}", dependencies=[Depends(JWTBearer())])

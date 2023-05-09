@@ -5,6 +5,7 @@ from fastapi import HTTPException, Query
 from sqlalchemy.orm.session import Session
 
 from db import Base
+from schema.base import Pagi
 
 ModelType = TypeVar("ModelType", bound=Base)
 
@@ -55,8 +56,5 @@ class BaseManager:
         total_count = objects.count()
         total_pages = math.ceil(total_count / page_size)
         objects = objects.limit(page_size).offset((page - 1) * page_size)
-        meta = {
-            "page": f"Page {page} from {total_pages}",
-            "total_count": total_count,
-        }
-        return objects, meta
+        page = f"Page {page} from {total_pages}"
+        return Pagi(objects.all(), page, total_count)

@@ -29,5 +29,7 @@ def get_all_users(
     page_size: int = Query(50, description="Items per page", ge=1),
 ):
     with get_db_session() as session:
-        users, meta = user_manager.get_all(session, page=page, page_size=page_size)
-        return View.from_list(NewUser, users, meta)
+        users = user_manager.get_all(session)
+        users = user_manager.paginate(users, page, page_size)
+
+    return View.from_list(NewUser, users)
