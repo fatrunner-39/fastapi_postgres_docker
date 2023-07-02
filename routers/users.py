@@ -1,11 +1,27 @@
 from fastapi import APIRouter, Depends, Query
+from pydantic import EmailStr
 
 from db import get_db_session
 from helpers import JWTBearer
+from helpers.base_schemas import BaseSchema, View
 from managers import user_manager
-from schema import NewUser, User, View
 
 router = APIRouter()
+
+
+class User(BaseSchema):
+    username: EmailStr
+    password: str
+
+    class Config:
+        schema_extra = {
+            "example": {"username": "user@example.com", "password": "password"}
+        }
+
+
+class NewUser(BaseSchema):
+    id: int
+    username: str
 
 
 @router.post("/sign_up")
@@ -13,7 +29,7 @@ def create_account(user: User):
     with get_db_session() as session:
         new_user = user_manager.create(user, session)
         session.commit()
-    return NewUser.from_orm(new_user)
+        return NewUser.from_orm(new_user)
 
 
 @router.post("/login/")

@@ -1,24 +1,14 @@
-import os
 from logging.config import fileConfig
 
-from dotenv import load_dotenv
+from alembic import context
 from sqlalchemy import engine_from_config, pool
 
-from alembic import context
-
-load_dotenv()
+from db import SYNC_DATABASE_URL, Base
+from models import __all__
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
 config = context.config
-
-section = config.config_ini_section
-config.set_section_option(section, "POSTGRES_USER", os.environ.get("POSTGRES_USER"))
-config.set_section_option(
-    section, "POSTGRES_PASSWORD", os.environ.get("POSTGRES_PASSWORD")
-)
-config.set_section_option(section, "POSTGRES_SERVER", os.environ.get("POSTGRES_SERVER"))
-config.set_section_option(section, "POSTGRES_DB", os.environ.get("POSTGRES_DB"))
 
 # Interpret the config file for Python logging.
 # This line sets up loggers basically.
@@ -29,12 +19,13 @@ if config.config_file_name is not None:
 # for 'autogenerate' support
 # from myapp import mymodel
 # target_metadata = mymodel.Base.metadata
-target_metadata = None
+target_metadata = Base.metadata
 
 # other values from the config, defined by the needs of env.py,
 # can be acquired:
 # my_important_option = config.get_main_option("my_important_option")
 # ... etc.
+config.set_main_option("sqlalchemy.url", SYNC_DATABASE_URL)
 
 
 def run_migrations_offline() -> None:
@@ -75,7 +66,9 @@ def run_migrations_online() -> None:
     )
 
     with connectable.connect() as connection:
-        context.configure(connection=connection, target_metadata=target_metadata)
+        context.configure(
+            connection=connection, target_metadata=target_metadata
+        )
 
         with context.begin_transaction():
             context.run_migrations()

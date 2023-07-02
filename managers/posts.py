@@ -7,7 +7,7 @@ from . import BaseManager
 
 
 class PostManager(BaseManager):
-    def create(self, post: Post, session: Session, *args, **kwargs) -> Post:
+    def create(self, post, session: Session, *args, **kwargs) -> Post:
         creator_id = kwargs.get("creator_id")
         post.creator_id = creator_id
         new_post: Post = super().create(post, session, *args, **kwargs)

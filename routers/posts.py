@@ -1,13 +1,33 @@
+from datetime import datetime
 from typing import Optional
 
 from fastapi import APIRouter, Depends, Query
 
 from db import get_db_session
 from helpers import AuthJWT, JWTBearer, get_dict_from_token
+from helpers.base_schemas import BaseSchema, View
 from managers import post_manager
-from schema import NewPost, Post, PostUpdate, View
 
 router = APIRouter()
+
+
+class Post(BaseSchema):
+    title: str
+    text: str
+    creator_id: int | None = None
+
+    class Config:
+        schema_extra = {"example": {"title": "Example title", "text": "Example text"}}
+
+
+class NewPost(BaseSchema):
+    id: int
+    title: Optional[str]
+    text: Optional[str]
+    creator_id: Optional[int]
+    published: Optional[datetime]
+    like: int
+    dislike: int
 
 
 @router.post("/", dependencies=[Depends(JWTBearer())])
@@ -40,6 +60,14 @@ def get_post(id: int):
     with get_db_session() as session:
         post = post_manager.get_by_id(id, session)
     return NewPost.from_orm(post)
+
+
+class PostUpdate(BaseSchema):
+    title: Optional[str]
+    text: Optional[str]
+
+    class Config:
+        schema_extra = {"example": {"title": "Updated example", "text": "Updated text"}}
 
 
 @router.put("/{id}", dependencies=[Depends(JWTBearer())])

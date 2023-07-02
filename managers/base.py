@@ -5,7 +5,7 @@ from fastapi import HTTPException, Query
 from sqlalchemy.orm.session import Session
 
 from db import Base
-from schema.base import Pagi
+from helpers.base_schemas import Pagi
 
 ModelType = TypeVar("ModelType", bound=Base)
 
@@ -15,10 +15,7 @@ class BaseManager:
         self.model = model
 
     def create(self, schema, session: Session, *args, **kwargs) -> ModelType:
-        if type(schema) == dict:
-            instance: ModelType = self.model(**schema)
-        else:
-            instance: ModelType = self.model(**schema.dict())
+        instance: ModelType = self.model(**schema.dict())
         session.add(instance)
         return instance
 
@@ -37,7 +34,7 @@ class BaseManager:
         return instance
 
     def update(self, schema, id, session: Session, *args, **kwargs):
-        self.get_by_id(id, session)
+        instance = self.get_by_id(id, session)
         if type(schema) == dict:
             session.query(self.model).filter_by(id=id).update(
                 schema, synchronize_session=False
@@ -46,7 +43,6 @@ class BaseManager:
             session.query(self.model).filter_by(id=id).update(
                 schema.dict(), synchronize_session=False
             )
-        instance = self.get_by_id(id, session)
         return instance
 
     def delete(self, id, session: Session) -> None:

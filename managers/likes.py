@@ -4,7 +4,6 @@ from fastapi import HTTPException, Request
 from sqlalchemy import and_
 from sqlalchemy.orm.session import Session
 
-import schema
 from models import Like
 
 from . import BaseManager
@@ -30,24 +29,25 @@ class LikeManager(BaseManager):
         return True
 
     def update_or_create(
-        self, request: Request, like: schema.Like, session: Session, **kwargs
+        self, like, request: Request, session: Session, **kwargs
     ) -> Like:
         current_user = kwargs.get("current_user")
         like_exist = self.get_like_exist(current_user, like.post_id, session)
 
         choice = self.get_choice(request)
 
+        post = post_manager.get_by_id(like.post_id, session)
+
+        # prevent to like self posts
+        if current_user == post.creator_id:
+            raise HTTPException(status_code=403, detail={"failed": "Forbidden"})
+
         if not like_exist:
-            data = {"user_id": current_user, "post_id": like.post_id, "is_like": choice}
-            data = schema.Like(**data)
-            return super().create(data, session)
+            like.user_id = current_user
+            like.is_like = choice
+
+            return super().create(like, session)
         else:
-            post = post_manager.get_by_id(like_exist.post_id, session)
-
-            # prevent to like self posts
-            if current_user == post.creator_id:
-                raise HTTPException(status_code=403, detail={"failed": "Forbidden"})
-
             if like_exist.is_like == choice:
                 super().delete(like_exist.id, session)
             else:

@@ -10,11 +10,3 @@ class Like(Base):
     user_id = Column(ForeignKey("users.id", ondelete="CASCADE"))
     post_id = Column(ForeignKey("posts.id", ondelete="CASCADE"))
     is_like = Column(Boolean, nullable=True)
-
-    def as_dict(self):
-        return {
-            "id": self.id,
-            "user_id": self.user_id,
-            "post_id": self.post_id,
-            "is_like": self.is_like,
-        }
